@@ -1,2 +1,5 @@
 # gql-ws
-go implementation of graphql-ws protocol
+
+Go implementation of [graphql-ws protocol][protocol]
+
+[protocol]: https://github.com/enisdenjo/graphql-ws/blob/master/PROTOCOL.md
