@@ -13,13 +13,17 @@ export const useClient = () => {
       .concat(`graphql`)
       .join(`/`)}`;
     console.log(url);
-    const c = createClient({ url });
+    const c = createClient({ url, lazy: false });
+    setClient(c);
+    c.on(`message`, (e) => {
+      console.log(e);
+    });
     c.on(`connected`, () => {
       console.log(`connected`);
-      setClient(c);
     });
-    c.on(`closed`, () => {
+    c.on(`closed`, (e) => {
       console.log(`closed`);
+      console.log(e);
     });
     c.on(`connecting`, () => {
       console.log(`connecting`);

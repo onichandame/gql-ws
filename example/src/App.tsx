@@ -1,35 +1,17 @@
-import { useState } from "react";
-import { useClient } from "./client";
-
 import logo from "./logo.svg";
 import "./App.css";
+import { Echo } from "./echo";
+import { Timestamp } from "./timestamp";
 
 function App() {
-  const client = useClient();
-  const [echo, setEcho] = useState(``);
-  const sendEcho = async () => {
-    client?.subscribe<{ echo: string }>(
-      { query: `query{echo}` },
-      {
-        next: (next) => {
-          console.log(next);
-          if (next.data) setEcho(next.data.echo);
-          if (next.errors) console.error(next.errors);
-        },
-        error: () => {},
-        complete: () => {},
-      }
-    );
-  };
   return (
     <div className="App">
       <header className="App-header">
         <img src={logo} className="App-logo" alt="logo" />
         <p>Hello Vite + React!</p>
         <p>
-          <button type="button" onClick={sendEcho}>
-            echo: {echo}
-          </button>
+          <Echo />
+          <Timestamp />
         </p>
         <p>
           Edit <code>App.tsx</code> and save to test HMR updates.

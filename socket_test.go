@@ -43,11 +43,15 @@ func TestSocket(t *testing.T) {
 						},
 						Subscribe: func(p graphql.ResolveParams) (interface{}, error) {
 							c := make(chan interface{})
+							stop := gqlws.GetSubscriptionStopSig(p.Context)
 							go func() {
 								ticker := time.NewTicker(time.Millisecond)
 								for {
 									select {
 									case <-p.Context.Done():
+										close(c)
+										return
+									case <-stop:
 										close(c)
 										return
 									case <-ticker.C:

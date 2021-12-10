@@ -14,6 +14,12 @@ func GetConnectionParams(ctx context.Context) ConnectionParams {
 	return ctx.Value(connParamsKey).(ConnectionParams)
 }
 
+var subscriptionStopKey = &struct{}{}
+
+func GetSubscriptionStopSig(ctx context.Context) chan interface{} {
+	return ctx.Value(subscriptionStopKey).(chan interface{})
+}
+
 func getOperationTypeOfReq(reqStr string) string {
 	source := source.NewSource(&source.Source{
 		Body: []byte(reqStr),

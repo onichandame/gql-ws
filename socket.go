@@ -101,7 +101,12 @@ func (sock *Socket) Listen() {
 	}()
 	// timeout
 	go func() {
-		time.Sleep(sock.ConnectionInitTimeout)
+		timeout := sock.ConnectionInitTimeout
+		minTimeout := time.Second * 5
+		if timeout < minTimeout {
+			timeout = minTimeout
+		}
+		time.Sleep(timeout)
 		if sock.inited == 0 {
 			sock.breaker <- NewFatalError(4408, `Connection initialisation timeout`)
 		}
@@ -195,22 +200,40 @@ func (sock *Socket) handleRequest(msg *message.Message) {
 				panic(NewFatalError(4400, `payload of subscribe request invalid`))
 			}
 		}
-		sock.sm.add(*msg.ID)
+		stopchan := sock.sm.add(*msg.ID)
 		defer sock.sm.del(*msg.ID)
 		if getOperationTypeOfReq(query.Query) == ast.OperationTypeSubscription {
-			reschan := graphql.Subscribe(*sock.getGqlParams(&query))
-			for res := range reschan {
-				sock.writer <- &message.Message{Type: message.Next, Payload: res, ID: msg.ID}
+			params := sock.getGqlParams(&query, stopchan)
+			reschan := graphql.Subscribe(*params)
+		LOOP:
+			for {
+				select {
+				case res, ok := <-reschan:
+					if ok {
+						sock.writer <- &message.Message{Type: message.Next, Payload: res, ID: msg.ID}
+					} else {
+						break LOOP
+					}
+				case <-stopchan:
+					break LOOP
+				}
 			}
 		} else {
-			sock.writer <- &message.Message{Type: message.Next, ID: msg.ID, Payload: graphql.Do(*sock.getGqlParams(&query))}
+			sock.writer <- &message.Message{Type: message.Next, ID: msg.ID, Payload: graphql.Do(*sock.getGqlParams(&query, stopchan))}
 		}
 		sock.writer <- &message.Message{Type: message.Complete, ID: msg.ID}
+	case message.Complete:
+		if msg.ID == nil {
+			panic(NewFatalError(4400, `complete message must come with an id`))
+		}
+		if sock.sm.has(*msg.ID) {
+			sock.sm.get(*msg.ID) <- nil
+		}
 	default:
 		panic(NewFatalError(4400, fmt.Sprintf(`message type %v not supported`, msg.Type)))
 	}
 }
-func (sock *Socket) getGqlParams(q *message.SubscribePayload) *graphql.Params {
+func (sock *Socket) getGqlParams(q *message.SubscribePayload, stopchan chan interface{}) *graphql.Params {
 	ctx := sock.Context
 	if ctx == nil {
 		ctx = context.Background()
@@ -220,6 +243,6 @@ func (sock *Socket) getGqlParams(q *message.SubscribePayload) *graphql.Params {
 		RequestString:  q.Query,
 		VariableValues: q.Variables,
 		OperationName:  q.OperationName,
-		Context:        context.WithValue(ctx, connParamsKey, sock.connectionParams),
+		Context:        context.WithValue(context.WithValue(ctx, connParamsKey, sock.connectionParams), subscriptionStopKey, stopchan),
 	}
 }
