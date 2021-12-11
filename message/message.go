@@ -1,4 +1,4 @@
-package message
+package gqlwsmessage
 
 type Type string
 
@@ -22,8 +22,8 @@ type Message struct {
 type Payload interface{}
 
 type SubscribePayload struct {
+	Query         string                 `json:"query" validate:"required"`
 	OperationName string                 `json:"operationName,omitempty"`
-	Query         string                 `json:"query"`
 	Variables     map[string]interface{} `json:"variables,omitempty"`
 	Extensions    map[string]interface{} `json:"extensions,omitempty"`
 }

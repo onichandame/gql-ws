@@ -35,6 +35,8 @@ github.com/onichandame/go-utils v0.0.6 h1:Va7ESQe3/7UZJS1PKF8Ke7AcFpJVxksDrqMPtV
 github.com/onichandame/go-utils v0.0.6/go.mod h1:/GfmJiGG8PovCgL8+PiKhe9ULzX8mwJ080ATTXo978E=
 github.com/onichandame/go-utils v0.0.7 h1:aYYmyabR4AcpG+1t7Wi5Fzzk80pvCfVleyzUBoY4kLM=
 github.com/onichandame/go-utils v0.0.7/go.mod h1:/GfmJiGG8PovCgL8+PiKhe9ULzX8mwJ080ATTXo978E=
+github.com/onichandame/go-utils v0.0.8 h1:yZfAR5TefTY/dlltHX1vKOb2ZEbqSPBi2ehaQlaF/PA=
+github.com/onichandame/go-utils v0.0.8/go.mod h1:/GfmJiGG8PovCgL8+PiKhe9ULzX8mwJ080ATTXo978E=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=

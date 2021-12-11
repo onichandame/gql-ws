@@ -1,3 +1,3 @@
-package gqlws
+package gqlwsserver
 
 type ConnectionParams interface{}

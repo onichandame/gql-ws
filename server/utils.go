@@ -1,4 +1,4 @@
-package gqlws
+package gqlwsserver
 
 import (
 	"context"

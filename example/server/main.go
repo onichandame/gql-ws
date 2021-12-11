@@ -1,12 +1,13 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/graphql"
 	goutils "github.com/onichandame/go-utils"
-	gqlws "github.com/onichandame/gql-ws"
+	gqlwsserver "github.com/onichandame/gql-ws/server"
 )
 
 func main() {
@@ -39,7 +40,7 @@ func main() {
 						},
 						Subscribe: func(p graphql.ResolveParams) (interface{}, error) {
 							reschan := make(chan interface{})
-							stopchan := gqlws.GetSubscriptionStopSig(p.Context)
+							stopchan := gqlwsserver.GetSubscriptionStopSig(p.Context)
 							go func() {
 								ticker := time.NewTicker(time.Second)
 								for {
@@ -62,8 +63,11 @@ func main() {
 			}),
 		})
 		goutils.Assert(err)
-		sock := gqlws.Socket{Response: c.Writer, Request: c.Request, Schema: &schema}
-		sock.Listen()
+		sock := gqlwsserver.NewSocket(&gqlwsserver.Config{
+			Response: c.Writer, Request: c.Request, Schema: &schema,
+		})
+		sock.Wait()
+		fmt.Println(sock.Error())
 	})
 	server.StaticFS("home", getFS())
 	server.Run(`0.0.0.0:80`)

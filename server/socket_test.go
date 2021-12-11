@@ -1,4 +1,4 @@
-package gqlws_test
+package gqlwsserver_test
 
 import (
 	"net/http"
@@ -12,13 +12,14 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/graphql-go/graphql"
 	goutils "github.com/onichandame/go-utils"
-	gqlws "github.com/onichandame/gql-ws"
-	"github.com/onichandame/gql-ws/message"
+	gqlwsmessage "github.com/onichandame/gql-ws/message"
+	gqlwsserver "github.com/onichandame/gql-ws/server"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSocket(t *testing.T) {
 	ConnectionInitTimeout := time.Millisecond * 500
+	GraceClosePeriod := time.Millisecond * 500
 	eng := gin.Default()
 	eng.GET("", func(c *gin.Context) {
 		schema, err := graphql.NewSchema(graphql.SchemaConfig{
@@ -43,7 +44,7 @@ func TestSocket(t *testing.T) {
 						},
 						Subscribe: func(p graphql.ResolveParams) (interface{}, error) {
 							c := make(chan interface{})
-							stop := gqlws.GetSubscriptionStopSig(p.Context)
+							stop := gqlwsserver.GetSubscriptionStopSig(p.Context)
 							go func() {
 								ticker := time.NewTicker(time.Millisecond)
 								for {
@@ -66,8 +67,10 @@ func TestSocket(t *testing.T) {
 			}),
 		})
 		assert.Nil(t, err)
-		sock := gqlws.Socket{Response: c.Writer, Request: c.Request, Schema: &schema, ConnectionInitTimeout: ConnectionInitTimeout}
-		sock.Listen()
+		sock := gqlwsserver.NewSocket(&gqlwsserver.Config{
+			Response: c.Writer, Request: c.Request, Schema: &schema, ConnectionInitTimeout: ConnectionInitTimeout, GraceClosePeriod: GraceClosePeriod,
+		})
+		sock.Wait()
 	})
 	server := httptest.NewServer(eng)
 	defer server.Close()
@@ -83,18 +86,18 @@ func TestSocket(t *testing.T) {
 		conn.WriteControl(websocket.CloseMessage, []byte(``), time.Now().Add(time.Second))
 		conn.Close()
 	}
-	getMessage := func(conn *websocket.Conn) *message.Message {
-		var msg message.Message
+	getMessage := func(conn *websocket.Conn) *gqlwsmessage.Message {
+		var msg gqlwsmessage.Message
 		assert.Nil(t, conn.ReadJSON(&msg))
 		return &msg
 	}
 	initClient := func(conn *websocket.Conn) {
-		assert.Nil(t, conn.WriteJSON(&message.Message{Type: message.ConnectionInit}))
+		assert.Nil(t, conn.WriteJSON(&gqlwsmessage.Message{Type: gqlwsmessage.ConnectionInit}))
 		msg := getMessage(conn)
-		assert.Equal(t, message.ConnectionAck, msg.Type)
+		assert.Equal(t, gqlwsmessage.ConnectionAck, msg.Type)
 	}
-	getResult := func(msg *message.Message) *graphql.Result {
-		assert.Equal(t, message.Next, msg.Type)
+	getResult := func(msg *gqlwsmessage.Message) *graphql.Result {
+		assert.Equal(t, gqlwsmessage.Next, msg.Type)
 		payload, ok := msg.Payload.(map[string]interface{})
 		assert.True(t, ok)
 		var p graphql.Result
@@ -123,7 +126,7 @@ func TestSocket(t *testing.T) {
 		defer closeClient(client)
 		initClient(client)
 		id := uuid.NewString()
-		assert.Nil(t, client.WriteJSON(&message.Message{Type: message.Subscribe, ID: &id, Payload: &message.SubscribePayload{Query: `query{q}`}}))
+		assert.Nil(t, client.WriteJSON(&gqlwsmessage.Message{Type: gqlwsmessage.Subscribe, ID: &id, Payload: &gqlwsmessage.SubscribePayload{Query: `query{q}`}}))
 		msg := getMessage(client)
 		assert.Equal(t, id, *msg.ID)
 		result := getResult(msg)
@@ -131,14 +134,14 @@ func TestSocket(t *testing.T) {
 		assert.Equal(t, `hi`, result.Data.(map[string]interface{})["q"])
 		msg = getMessage(client)
 		assert.Equal(t, id, *msg.ID)
-		assert.Equal(t, message.Complete, msg.Type)
+		assert.Equal(t, gqlwsmessage.Complete, msg.Type)
 	})
 	t.Run("can subscription", func(t *testing.T) {
 		client := getClient()
 		defer closeClient(client)
 		initClient(client)
 		id := uuid.NewString()
-		assert.Nil(t, client.WriteJSON(&message.Message{Type: message.Subscribe, ID: &id, Payload: &message.SubscribePayload{Query: `subscription{s}`}}))
+		assert.Nil(t, client.WriteJSON(&gqlwsmessage.Message{Type: gqlwsmessage.Subscribe, ID: &id, Payload: &gqlwsmessage.SubscribePayload{Query: `subscription{s}`}}))
 		attempts := 10
 		for i := 0; i < attempts; i++ {
 			msg := getMessage(client)

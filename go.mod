@@ -6,7 +6,7 @@ require (
 	github.com/gin-gonic/gin v1.7.7
 	github.com/gorilla/websocket v1.4.2
 	github.com/graphql-go/graphql v0.8.0
-	github.com/onichandame/go-utils v0.0.7
+	github.com/onichandame/go-utils v0.0.8
 )
 
 require (
